@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Resources\MemoResource;
 use Illuminate\Support\Facades\Route;
 
+
 Route::get('/', function () {
     return view('home');
 });
@@ -88,6 +89,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/vue-memos', function () {
         return view('vue_memos');
     })->name('vue.memos');
+
+    Route::get('/tasks', function () {
+        return view('tasks');
+    })->name('tasks.index');
 
 });
 
