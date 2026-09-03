@@ -24,11 +24,17 @@ const props = defineProps({
         type: String,
         default: '',
     },
+
+    isEditing: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits([
     'update:form',
     'submit',
+    'cancel',
 ]);
 
 const updateField = (field, value) => {
@@ -41,7 +47,9 @@ const updateField = (field, value) => {
 
 <template>
     <section class="task-form-section">
-        <h2>タスク新規登録</h2>
+        <h2>
+            {{ isEditing ? 'タスク編集' : 'タスク新規登録' }}
+        </h2>
 
         <p
             v-if="successMessage"
@@ -236,14 +244,28 @@ const updateField = (field, value) => {
                     </p>
                 </div>
             </div>
-
-            <button
-                type="submit"
-                class="submit-button"
+            <div class="form-actions">
+                <button
+                    type="submit"
+                    class="submit-button"
+                    :disabled="isSubmitting"
+                >
+                    {{
+                        isSubmitting
+                            ? (isEditing ? '更新中...' : '登録中...')
+                            : (isEditing ? '更新する' : '登録する')
+                    }}
+                </button>
+                <button
+                v-if="isEditing"
+                type="button"
+                class="cancel-button"
                 :disabled="isSubmitting"
-            >
-                {{ isSubmitting ? '登録中...' : '登録する' }}
-            </button>
+                @click="emit('cancel')"
+                >
+                編集をキャンセル
+                </button>
+            </div>
         </form>
     </section>
 </template>
@@ -333,5 +355,30 @@ const updateField = (field, value) => {
     .form-row {
         display: block;
     }
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cancel-button {
+    padding: 10px 20px;
+    border: 1px solid #94a3b8;
+    border-radius: 7px;
+    background-color: white;
+    color: #475569;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.cancel-button:hover:not(:disabled) {
+    background-color: #f1f5f9;
+}
+
+.cancel-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 </style>

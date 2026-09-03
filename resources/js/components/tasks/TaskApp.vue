@@ -22,6 +22,7 @@ const form = ref({
 const formErrors = ref({});
 const isSubmitting = ref(false);
 const successMessage = ref('');
+const editingTaskId = ref(null);
 
 const fetchTasks = async () => {
     isLoading.value = true;
@@ -151,6 +152,85 @@ const deleteTask = async (task) => {
     }
 };
 
+const updateTask = async () => {
+    isSubmitting.value = true;
+    formErrors.value = {};
+    successMessage.value = '';
+    errorMessage.value = '';
+
+    try {
+        await axios.put(
+            `/api/tasks/${editingTaskId.value}`,
+            {
+                category_id: form.value.category_id,
+                title: form.value.title,
+                description:
+                    form.value.description || null,
+                status: form.value.status,
+                priority: form.value.priority,
+                due_date:
+                    form.value.due_date || null,
+            }
+        );
+
+        successMessage.value =
+            'タスクを更新しました。';
+
+        editingTaskId.value = null;
+        resetForm();
+
+        await fetchTasks();
+    } catch (error) {
+        console.error(error);
+
+        if (error.response?.status === 422) {
+            formErrors.value =
+                error.response.data.errors;
+        } else if (error.response?.status === 401) {
+            errorMessage.value =
+                'ログインが必要です。';
+        } else if (error.response?.status === 404) {
+            errorMessage.value =
+                '更新するタスクが見つかりません。';
+        } else {
+            errorMessage.value =
+                'タスクの更新に失敗しました。';
+        }
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const startEdit = (task) => {
+    editingTaskId.value = task.id;
+
+    form.value = {
+        category_id: task.category?.id ?? '',
+        title: task.title,
+        description: task.description ?? '',
+        status: task.status,
+        priority: task.priority,
+        due_date: task.due_date ?? '',
+    };
+
+    formErrors.value = {};
+    successMessage.value = '';
+    errorMessage.value = '';
+
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+    });
+};
+
+const cancelEdit = () => {
+    editingTaskId.value = null;
+    successMessage.value = '';
+    errorMessage.value = '';
+
+    resetForm();
+};
+
 onMounted(() => {
     fetchTasks();
     fetchCategories();
@@ -165,8 +245,10 @@ onMounted(() => {
             :form-errors="formErrors"
             :is-submitting="isSubmitting"
             :success-message="successMessage"
+            :is-editing="editingTaskId !== null"
             @update:form="updateForm"
-            @submit="createTask"
+            @submit="editingTaskId !== null ? updateTask() : createTask()"
+            @cancel="cancelEdit"
         />
         <header class="task-header">
             <div>
@@ -216,6 +298,7 @@ onMounted(() => {
                 v-for="task in tasks"
                 :key="task.id"
                 :task="task"
+                @edit="startEdit"
                 @delete="deleteTask"
             />
         </div>
