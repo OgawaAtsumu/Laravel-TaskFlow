@@ -40,7 +40,7 @@ const emit = defineEmits([
 const updateField = (field, value) => {
     emit('update:form', {
         ...props.form,
-        [field]:value,
+        [field]: value,
     });
 };
 </script>
@@ -257,13 +257,13 @@ const updateField = (field, value) => {
                     }}
                 </button>
                 <button
-                v-if="isEditing"
-                type="button"
-                class="cancel-button"
-                :disabled="isSubmitting"
-                @click="emit('cancel')"
+                    v-if="isEditing"
+                    type="button"
+                    class="cancel-button"
+                    :disabled="isSubmitting"
+                    @click="emit('cancel')"
                 >
-                編集をキャンセル
+                    編集をキャンセル
                 </button>
             </div>
         </form>

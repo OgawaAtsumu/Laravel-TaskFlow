@@ -376,5 +376,4 @@ onMounted(() => {
     color: #667085;
     text-align: center;
 }
-
 </style>
