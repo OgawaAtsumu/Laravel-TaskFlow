@@ -75,8 +75,8 @@ Laravel 12 (API) と Vue.js 3 を連携したSPAライクなタスク管理ポ�
 
 ```bash
 # リポジトリのクローン
-git clone <repository-url>
-cd Sample
+git clone https://github.com/OgawaAtsumu/Laravel-TaskFlow.git
+cd Laravel-TaskFlow
 
 # 依存パッケージのインストール
 composer install
