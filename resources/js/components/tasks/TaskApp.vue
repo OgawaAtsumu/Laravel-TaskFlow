@@ -1,14 +1,22 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import axios from 'axios';
 import TaskCard from './TaskCard.vue';
 import TaskForm from './TaskForm.vue';
+import TaskFilter from './TaskFilter.vue';
+import TaskStats from './TaskStats.vue';
 
 const tasks = ref([]);
 const isLoading = ref(false);
 const errorMessage = ref('');
 
 const categories = ref([]);
+
+// フィルター用 state
+const searchKeyword = ref('');
+const selectedStatus = ref('');
+const selectedCategoryId = ref('');
+const selectedPriority = ref('');
 
 const form = ref({
     category_id: '',
@@ -23,6 +31,55 @@ const formErrors = ref({});
 const isSubmitting = ref(false);
 const successMessage = ref('');
 const editingTaskId = ref(null);
+
+// 統計情報（ダッシュボード）
+const totalTasks = computed(() => tasks.value.length);
+const completedTasks = computed(
+    () => tasks.value.filter((task) => task.status === 'completed').length
+);
+const incompleteTasks = computed(
+    () => totalTasks.value - completedTasks.value
+);
+const completionRate = computed(() =>
+    totalTasks.value > 0
+        ? Math.round((completedTasks.value / totalTasks.value) * 100)
+        : 0
+);
+
+// 絞り込みフィルター
+const filteredTasks = computed(() => {
+    const keyword = searchKeyword.value.trim().toLowerCase();
+
+    return tasks.value.filter((task) => {
+        // キーワード検索（タイトル・詳細）
+        const matchesKeyword =
+            !keyword ||
+            task.title.toLowerCase().includes(keyword) ||
+            (task.description && task.description.toLowerCase().includes(keyword));
+
+        // ステータス絞り込み
+        const matchesStatus =
+            !selectedStatus.value || task.status === selectedStatus.value;
+
+        // プロジェクト（カテゴリ）絞り込み
+        const matchesCategory =
+            !selectedCategoryId.value ||
+            String(task.category?.id) === String(selectedCategoryId.value);
+
+        // 優先度絞り込み
+        const matchesPriority =
+            !selectedPriority.value || task.priority === selectedPriority.value;
+
+        return matchesKeyword && matchesStatus && matchesCategory && matchesPriority;
+    });
+});
+
+const clearFilters = () => {
+    searchKeyword.value = '';
+    selectedStatus.value = '';
+    selectedCategoryId.value = '';
+    selectedPriority.value = '';
+};
 
 const fetchTasks = async () => {
     isLoading.value = true;
@@ -239,23 +296,12 @@ onMounted(() => {
 
 <template>
     <main class="task-app">
-        <TaskForm
-            :categories="categories"
-            :form="form"
-            :form-errors="formErrors"
-            :is-submitting="isSubmitting"
-            :success-message="successMessage"
-            :is-editing="editingTaskId !== null"
-            @update:form="updateForm"
-            @submit="editingTaskId !== null ? updateTask() : createTask()"
-            @cancel="cancelEdit"
-        />
         <header class="task-header">
             <div>
-                <h1>タスク管理</h1>
+                <h1 class="app-title">TaskFlow</h1>
 
                 <p>
-                    Laravel APIから取得したタスクです。
+                    プロジェクトとタスクを一元管理するタスクフローシステム
                 </p>
             </div>
 
@@ -269,41 +315,87 @@ onMounted(() => {
             </button>
         </header>
 
-        <p
-            v-if="isLoading"
-            class="loading-message"
-        >
-            タスクを読み込んでいます...
-        </p>
+        <!-- ダッシュボード統計 -->
+        <TaskStats
+            :total-tasks="totalTasks"
+            :completed-tasks="completedTasks"
+            :incomplete-tasks="incompleteTasks"
+            :completion-rate="completionRate"
+        />
 
-        <p
-            v-else-if="errorMessage"
-            class="error-message"
-        >
-            {{ errorMessage }}
-        </p>
+        <!-- タスク作成・編集フォーム -->
+        <TaskForm
+            :categories="categories"
+            :form="form"
+            :form-errors="formErrors"
+            :is-submitting="isSubmitting"
+            :success-message="successMessage"
+            :is-editing="editingTaskId !== null"
+            @update:form="updateForm"
+            @submit="editingTaskId !== null ? updateTask() : createTask()"
+            @cancel="cancelEdit"
+        />
 
-        <p
-            v-else-if="tasks.length === 0"
-            class="empty-message"
-        >
-            タスクはまだ登録されていません。
-        </p>
+        <!-- タスク一覧セクション -->
+        <section class="task-list-section">
+            <div class="list-section-header">
+                <h2>タスク一覧</h2>
+            </div>
 
-        <div
-            v-else
-            class="task-grid"
-        >
-            <TaskCard
-                v-for="task in tasks"
-                :key="task.id"
-                :task="task"
-                @edit="startEdit"
-                @delete="deleteTask"
+            <!-- 検索・絞り込みフィルター -->
+            <TaskFilter
+                v-model:search-keyword="searchKeyword"
+                v-model:selected-status="selectedStatus"
+                v-model:selected-category-id="selectedCategoryId"
+                v-model:selected-priority="selectedPriority"
+                :categories="categories"
+                :total-count="tasks.length"
+                :filtered-count="filteredTasks.length"
+                @clear="clearFilters"
             />
-        </div>
+
+            <p
+                v-if="isLoading"
+                class="loading-message"
+            >
+                タスクを読み込んでいます...
+            </p>
+
+            <p
+                v-else-if="errorMessage"
+                class="error-message"
+            >
+                {{ errorMessage }}
+            </p>
+
+            <p
+                v-else-if="tasks.length === 0"
+                class="empty-message"
+            >
+                タスクはまだ登録されていません。上のフォームから最初のタスクを登録しましょう！
+            </p>
+
+            <p
+                v-else-if="filteredTasks.length === 0"
+                class="empty-message"
+            >
+                検索条件に一致するタスクは見つかりませんでした。
+            </p>
+
+            <div
+                v-else
+                class="task-grid"
+            >
+                <TaskCard
+                    v-for="task in filteredTasks"
+                    :key="task.id"
+                    :task="task"
+                    @edit="startEdit"
+                    @delete="deleteTask"
+                />
+            </div>
+        </section>
     </main>
-    
 </template>
 
 <style scoped>
@@ -322,13 +414,33 @@ onMounted(() => {
     margin-bottom: 28px;
 }
 
-.task-header h1 {
-    margin: 0 0 8px;
+.task-header h1.app-title {
+    margin: 0 0 6px;
+    font-size: 30px;
+    font-weight: 800;
+    color: #1e3a8a;
+    letter-spacing: -0.5px;
 }
 
 .task-header p {
     margin: 0;
-    color: #667085;
+    color: #64748b;
+    font-size: 15px;
+}
+
+.task-list-section {
+    margin-top: 36px;
+}
+
+.list-section-header {
+    margin-bottom: 16px;
+}
+
+.list-section-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #1e293b;
+    font-weight: 700;
 }
 
 .reload-button {

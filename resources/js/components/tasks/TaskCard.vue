@@ -36,7 +36,7 @@ defineEmits([
             </span>
 
             <span class="category-label">
-                {{ task.category?.name ?? '未設定' }}
+                {{ task.category?.name ?? 'プロジェクト未設定' }}
             </span>
         </div>
 

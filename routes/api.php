@@ -16,7 +16,7 @@ Route::get('/test', function () {
     ]);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->name('api.')->group(function () {
     Route::get('/categories', function () {
         return response()->json([
             'data' => Category::orderBy('id')->get(['id', 'name']),

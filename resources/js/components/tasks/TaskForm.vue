@@ -61,7 +61,7 @@ const updateField = (field, value) => {
         <form @submit.prevent="emit('submit')">
             <div class="form-group">
                 <label for="task-category">
-                    カテゴリ
+                    プロジェクト
                 </label>
 
                 <select
@@ -75,7 +75,7 @@ const updateField = (field, value) => {
                     "
                 >
                     <option value="">
-                        カテゴリを選択してください
+                        プロジェクトを選択してください
                     </option>
 
                     <option

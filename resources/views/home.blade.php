@@ -19,6 +19,9 @@
                 ログイン中：{{ Auth::user()->name }}
             </p>
         <div class="home-button-area">
+            <a href="{{ route('tasks.index') }}" class="new-button" style="background-color: #2563eb;">
+                TaskFlow（タスク管理）へ
+            </a>
             <a href="{{ route('memos.index') }}" class="new-button">
                 メモ一覧へ
             </a>
